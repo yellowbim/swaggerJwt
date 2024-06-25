@@ -1,0 +1,67 @@
+spring:
+  ##############################################
+  ### h2
+  ##############################################
+  h2:
+    console:
+      enabled: true
+      path: /console
+  ##############################################
+  ### db connection info
+  ##############################################
+  datasource:
+    driver-class-name: org.h2.Driver
+#    url: jdbc:h2:/Users/jungju nlee/dev/github/three-dot-db # embeded (mac)
+    url: jdbc:h2:C:\Users\JJLEE\99.개인파일\5.github\swaggerJwt # embeded (window)
+#    url: jdbc:h2:mem:test             # In-Memory
+    username: jjuni
+    password: jjuni
+  ##############################################
+  ### jpa
+  ##############################################
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+
+##############################################
+### swagger
+##############################################
+springdoc:
+  api-docs:
+    path: /api-docs # api 문서 정리 (내부 api url 과 동일할 필요가 없음)
+    groups:
+      enabled: true
+  swagger-ui:
+    path: /swagger.html
+    enabled: true
+    groups-order: ASC
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none
+  cache:
+    disabled: true
+  model-and-view-allowed: true
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+
+##############################################
+### jwt
+##############################################
+jwt:
+  expTime: 43200000     # 12시간
+  refresh-expiration-time: 604800000 # 7일
+  secret: c2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQtc2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQK
+
+##############################################
+### logging
+##############################################
+logging:
+  level:
+    org.hibernate.type: TRACE # parameter 값 보기
+    com.p6spy: DEBUG # P6Spy 로깅 설정

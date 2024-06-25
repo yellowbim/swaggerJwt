@@ -1,5 +1,7 @@
-# swaggerJwt
-swagger Jwt 생성
+# swaggerJwt 프로젝트
+Springboot3 에서 Swagger + JWT 기능을 가진 API 서비스 구축을 진행하는 프로젝트
+
+
 
 # ⚙️개발환경
 - JDK	openJDK 17
@@ -8,6 +10,8 @@ swagger Jwt 생성
 - DB	H2
 - Swagger(Springdoc)	2.0.2
 - IDE	Intellij
+
+
 
 # 관련 정리 사이트
 [https://tistory.slowtuttle.co.kr](https://slowtuttle.tistory.com/entry/Springboot3-Swagger-Jwt-1)

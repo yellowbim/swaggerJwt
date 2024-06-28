@@ -5,11 +5,9 @@ import jakarta.transaction.Transactional;
 import jakarta.xml.bind.ValidationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jjuni.swaggerjwt.auth.dto.SignInRequest;
-import org.jjuni.swaggerjwt.auth.dto.SignInResponse;
-import org.jjuni.swaggerjwt.auth.dto.SignUpRequest;
-import org.jjuni.swaggerjwt.auth.dto.SignUpResponse;
+import org.jjuni.swaggerjwt.auth.dto.*;
 import org.jjuni.swaggerjwt.auth.jwt.JwtUtil;
+import org.jjuni.swaggerjwt.auth.repository.RefreshTokenRepository;
 import org.jjuni.swaggerjwt.member.entity.Member;
 import org.jjuni.swaggerjwt.member.repository.MemberRepository;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -25,6 +23,7 @@ import java.util.Optional;
 public class AuthService {
 
     private final MemberRepository memberRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder encoder;
     private final JwtUtil jwtUtil;
 
@@ -72,6 +71,22 @@ public class AuthService {
         if (encoder.matches(memberInfo.get().getPassword(),req.getPassword())) {
             throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
+
+        // Access 발급
+        String accessToken = jwtUtil.createAccessToken(memberInfo.get());
+        String refreshToken = jwtUtil.createRefreshToken();
+
+        // refresh token 존재 여부 확인
+//        refreshTokenRepository.findById(memberInfo.get().getId())
+//                .ifPresentOrElse(
+//                        it -> it.updateRefreshToken(refreshToken),
+//                        () -> refreshTokenRepository.
+//                );
+
+//        refreshTokenRepository.save(refreshToken);
+
+
+
         // access token 발급
         return new SignInResponse(memberInfo.get().getName(), memberInfo.get().getRole(), jwtUtil.createAccessToken(memberInfo.get()), "");
     }

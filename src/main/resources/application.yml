@@ -11,11 +11,12 @@ spring:
   ##############################################
   datasource:
     driver-class-name: org.h2.Driver
-#    url: jdbc:h2:/Users/jungju nlee/dev/github/three-dot-db # embeded (mac)
+    # h2에 동시접속을 하려면
     url: jdbc:h2:C:\Users\JJLEE\99.개인파일\5.github\swaggerJwt # embeded (window)
 #    url: jdbc:h2:mem:test             # In-Memory
     username: jjuni
     password: jjuni
+    connection-test-query: SELECT 1
   ##############################################
   ### jpa
   ##############################################
@@ -54,7 +55,7 @@ springdoc:
 ### jwt
 ##############################################
 jwt:
-  expTime: 43200000     # 12시간
+  access-expiration-time: 43200000     # 12시간
   refresh-expiration-time: 604800000 # 7일
   secret: c2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQtc2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQK
 

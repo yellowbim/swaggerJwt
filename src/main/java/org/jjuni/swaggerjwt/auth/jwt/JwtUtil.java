@@ -20,32 +20,28 @@ import java.util.Date;
 public class JwtUtil {
     private final Key key;
     private final long accessTokenExpTime;
+    private final long refreshTokenExpTime;
 
     public JwtUtil(
             @Value("${jwt.secret}") String secretKey,
-            @Value("${jwt.expTime}") long accessTokenExpTime
+            @Value("${jwt.access-expiration-time}") long accessTokenExpTime,
+            @Value("${jwt.refresh-expiration-time}") long refreshTokenExpTime
     ) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.accessTokenExpTime = accessTokenExpTime;
+        this.refreshTokenExpTime = refreshTokenExpTime;
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////// Access Token ////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////
     /**
      * Access Token 생성
      * @param member
      * @return Access Token String
      */
     public String createAccessToken(Member member) {
-        return createToken(member, accessTokenExpTime);
-    }
-
-    /**
-     * JWT 생성
-     * @param member
-     * @param expireTime
-     * @return JWT String
-     */
-    private String createToken(Member member, long expireTime) {
         Claims claims = Jwts.claims();
         claims.put("id", member.getId()); // 내부적으로 처리되는 ID (Long)
         claims.put("userId", member.getUserId()); // 사용자가 사용하는 userId (String)
@@ -53,10 +49,31 @@ public class JwtUtil {
         claims.put("role", member.getRole());
 
         ZonedDateTime now = ZonedDateTime.now();
-        ZonedDateTime tokenValidity = now.plusSeconds(expireTime);
+        ZonedDateTime tokenValidity = now.plusSeconds(accessTokenExpTime);
 
         return Jwts.builder()
                 .setClaims(claims)
+                .setIssuedAt(Date.from(now.toInstant()))
+                .setExpiration(Date.from(tokenValidity.toInstant()))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////// Access Token ////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * Refresh Token 생성
+     * - refresh token 은 Access Token 을 초기화 시키는 용도이며
+     *
+     * 사용자정보를 굳이 담을 필요가 없음
+     *
+     * @return Refresh Token String
+     */
+    public String createRefreshToken() {
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime tokenValidity = now.plusSeconds(refreshTokenExpTime);
+        return Jwts.builder()
                 .setIssuedAt(Date.from(now.toInstant()))
                 .setExpiration(Date.from(tokenValidity.toInstant()))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -114,5 +131,8 @@ public class JwtUtil {
             return e.getClaims();
         }
     }
+
+
+
 
 }

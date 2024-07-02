@@ -1,3 +1,6 @@
+server:
+  port: 9090
+
 spring:
   ##############################################
   ### h2
@@ -17,10 +20,14 @@ spring:
     username: jjuni
     password: jjuni
     connection-test-query: SELECT 1
+jackson:
+  time-zone: Asia/Seoul
+
   ##############################################
   ### jpa
   ##############################################
   jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
     show-sql: true
@@ -55,8 +62,8 @@ springdoc:
 ### jwt
 ##############################################
 jwt:
-  access-expiration-time: 43200000     # 12시간
-  refresh-expiration-time: 604800000 # 7일
+  access-expiration-time: 86400     # 1 일
+  refresh-expiration-time: 604800   # 7 일
   secret: c2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQtc2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQK
 
 ##############################################

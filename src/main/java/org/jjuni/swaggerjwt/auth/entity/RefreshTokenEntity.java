@@ -1,7 +1,10 @@
 package org.jjuni.swaggerjwt.auth.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -29,12 +32,14 @@ public class RefreshTokenEntity {
     private Member member;
 
     @Comment("리프레시 토큰 정보")
-    @Column(columnDefinition = "varchar(100)", nullable = false)
+    // refresh token의 길이가 100을 넘어서 우선 제외
+//    @Column(columnDefinition = "varchar(100)", nullable = false)
+    @Column(nullable = false)
     private String refreshToken;
 
-    @Comment("리프레시 토큰 만료일")
-    @Column(columnDefinition = "varchar(100)", nullable = false)
-    private String refreshTokenExpireDate;
+//    @Comment("리프레시 토큰 만료일")
+//    @Column(columnDefinition = "varchar(100)", nullable = false)
+//    private String refreshTokenExpireDate;
 
     @Comment("생성일")
     @CreationTimestamp
@@ -43,15 +48,17 @@ public class RefreshTokenEntity {
 
     @Comment("수정일")
     @UpdateTimestamp
-    @Column(updatable = false)
+    @Column
     private LocalDateTime updated;
 
     public RefreshTokenEntity(Member member, String refreshToken) {
         this.member = member;
         this.refreshToken = refreshToken;
+        this.updated = LocalDateTime.now();
     }
 
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+        this.updated = LocalDateTime.now();
     }
 }

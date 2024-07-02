@@ -12,7 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -32,7 +32,8 @@ public class SecurityConfig {
             "/api-docs/**",
             "/swagger-resource/**",
             "/api/v1/auth/sign-in",
-            "/api/v1/auth/sign-up"
+            "/api/v1/auth/sign-up",
+            "/api/v1/auth/reissue-access-token",
     };
 
     @Bean
@@ -44,7 +45,8 @@ public class SecurityConfig {
                 .httpBasic(http -> http.disable())
                 .formLogin(form -> form.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthorizationFilter, BasicAuthenticationFilter.class) // jwt 필터 추가
+//                .addFilterBefore(jwtAuthorizationFilter, BasicAuthenticationFilter.class) // jwt 필터 추가
+                .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class) // jwt 필터 추가
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PathRequest.toH2Console()).permitAll()
                         .requestMatchers(excludePath).permitAll()

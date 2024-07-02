@@ -1,5 +1,6 @@
 package org.jjuni.swaggerjwt.member.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Comment;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Getter
 @Setter
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})  // JPA에서 lazy관련 에러 날 경우 사용
 public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO) // jpa 자동생성

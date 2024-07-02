@@ -1,5 +1,7 @@
 package org.jjuni.swaggerjwt.auth.jwt;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -9,8 +11,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
-import org.json.simple.JSONObject;
+import org.jjuni.swaggerjwt.common.dto.CommResponse;
+import org.jjuni.swaggerjwt.common.enums.ResultCode;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,11 +23,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.webjars.NotFoundException;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -47,7 +51,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             "/api-docs/**",
             "/api/v1/auth/sign-in",
             "/api/v1/auth/sign-up",
-            "/console/**" // H2
+            "/api/v1/auth/reissue-access-token",
+            "/console/**", // H2
+            "/favicon.ico" // icon 인데 추가 안하니까 jwt에서 계속 에러 발생
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -69,26 +75,21 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             return;
         }
 
-
-
-        // 2. OPTIONS 요청일 경우 => 로직 처리 없이 다음 필터로 이동
+        // OPTIONS 요청일 경우 => 로직 처리 없이 다음 필터로 이동
         if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
             chain.doFilter(request, response);
             return;
         }
 
-        // [STEP1] Client에서 API를 요청할때 Header를 확인합니다.
-        String authorizationHeader = request.getHeader("Authorization");
-
-        logger.debug("[+] header Check: " + authorizationHeader);
-
+        // Header를 확인합니다.
+        String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         try {
-            // [STEP2-1] Header 내에 토큰이 존재하는 경우
+            // Header 내에 토큰이 존재하는 경우
             if (authorizationHeader != null && !authorizationHeader.equalsIgnoreCase("")) {
-                // [STEP2] Header 내에 토큰을 추출
+                // Header 내에 토큰을 추출
                 String accessToken = authorizationHeader.substring(7);
-                // [STEP3] 추출한 토큰이 유효한지 여부를 체크
-                if (jwtUtil.validateToken(accessToken)) {
+                // 추출한 토큰이 유효한지 여부를 체크
+                if (jwtUtil.validateAccessToken(accessToken)) {
                     // [STEP4] 토큰을 기반으로 사용자 아이디를 반환 받는 메서드
                     String userId = jwtUtil.getUserId(accessToken);
                     logger.debug("[+] user id Check: " + userId);
@@ -102,24 +103,70 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                     } else {
                         throw new UsernameNotFoundException("해당하는 사용자가 없습니다.");
                     }
-                    // 토큰이 유효하지 않은 경우
-                } else {
-                    throw new BadRequestException("토큰 정보가 유효하지 않습니다.");
                 }
             }
-            // [STEP2-1] 토큰이 존재하지 않는 경우
+            // 토큰이 존재하지 않는 경우
             else {
-                throw new JwtException("토큰 정보가 누락되어있습니다.");
+                throw new NotFoundException("토큰 정보가 누락되어있습니다.");
             }
         } catch (Exception e) {
+            log.error(e.getMessage());
             // Token 내에 Exception이 발생 하였을 경우 => 클라이언트에 응답값을 반환하고 종료합니다.
             response.setCharacterEncoding("UTF-8");
             response.setContentType("application/json");
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
             PrintWriter printWriter = response.getWriter();
-            JSONObject jsonObject = jsonResponseWrapper(e);
-            printWriter.print(jsonObject);
+            String newResponse = jsonResponseWrapper(e);
+            printWriter.print(newResponse);
             printWriter.flush();
             printWriter.close();
+        }
+    }
+
+    /**
+     * Access Token 만료로 재발급 요청 시 Access Token 재발급
+     *
+     * @param request
+     */
+    public String reIssueAccessToken(HttpServletRequest request, String refreshToken) {
+        // 만료된 Access Token 추출
+        String expiredAccessToken = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+        // Refresh Token 검증(사용자 정보, DB 존재 여부, 만료 여부)
+        jwtUtil.validateRefreshToken(refreshToken, expiredAccessToken);
+        // Access Token 재발급
+        String newAccessToken = jwtUtil.reIssueAccessToken(expiredAccessToken);
+        // 사용자 정보 조회 후 security context 등록 (userId로 체크)
+        UserDetails userDetails = userDetailsService.loadUserByUsername(jwtUtil.getUserId(newAccessToken));
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        return newAccessToken;
+    }
+
+    /**
+     * Access Token 만료로 요청 시 Access Token 재발급
+     *
+     * @param request
+     * @param response
+     * @param exception
+     */
+    private void reIssueAccessToken(HttpServletRequest request, HttpServletResponse response, Exception exception) {
+        try {
+            // 만료된 Access Token 확인
+            String expiredAccessToken = request.getHeader(HttpHeaders.AUTHORIZATION).substring(7);
+            String refreshToken = request.getHeader("Refresh-Token");
+            // Refresh Token 검증(사용자 정보, DB 존재 여부, 만료 여부)
+            jwtUtil.validateRefreshToken(refreshToken, expiredAccessToken);
+            // Access Toen 재발급
+            String newAccessToken = jwtUtil.reIssueAccessToken(expiredAccessToken);
+            // 사용자 정보 조회 후 security context 등록 (userId로 체크)
+            UserDetails userDetails = userDetailsService.loadUserByUsername(jwtUtil.getUserId(newAccessToken));
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            response.setHeader("New-Access-Token", newAccessToken);
+        } catch (Exception e) {
+            request.setAttribute("exception", e);
         }
     }
 
@@ -129,36 +176,42 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
      * @param e Exception
      * @return JSONObject
      */
-    private JSONObject jsonResponseWrapper(Exception e) {
-
-        String resultMsg = "";
+    public static String jsonResponseWrapper(Exception e) throws JsonProcessingException {
+        CommResponse<?> newResponse;
+        // 토큰 정보가 누락된경우
+        if (e instanceof NotFoundException) {
+//            resultMsg = "Not Found Token";
+            newResponse = CommResponse.createError(ResultCode.JWT_NOT_FIND_TOKEN.getResultMessage());
+        }
         // 일치하는 사용자 정보가 없는경우
-        if (e instanceof UsernameNotFoundException) {
-            resultMsg = "Not Found User";
+        else if (e instanceof UsernameNotFoundException) {
+//            resultMsg = "Not Found User";
+            newResponse = CommResponse.createError(ResultCode.NOT_FOUND_USER.getResultMessage());
         }
         // JWT 토큰 만료
         else if (e instanceof ExpiredJwtException) {
-            resultMsg = "TOKEN Expired";
-        }
-        // JWT 허용된 토큰이 아님
-        else if (e != null) {
-            resultMsg = "TOKEN SignatureException Login";
+//            resultMsg = "TOKEN Expired";
+            newResponse = CommResponse.createError(ResultCode.JWT_ACCESS_TOKEN_EXPIRED.getResultMessage());
         }
         // JWT 토큰내에서 오류 발생 시
         else if (e instanceof JwtException) {
-            resultMsg = "TOKEN Parsing JwtException";
+//            resultMsg = "TOKEN Parsing JwtException";
+            newResponse = CommResponse.createError(ResultCode.JWT_TOKEN_PARSING.getResultMessage());
+        }
+        // JWT 허용된 토큰이 아님
+        else if (e != null) {
+//            resultMsg = "TOKEN SignatureException Login";
+            newResponse = CommResponse.createError(ResultCode.UNAUTHORIZED.getResultMessage());
         }
         // 이외 JTW 토큰내에서 오류 발생
         else {
-            resultMsg = "OTHER TOKEN ERROR";
+//            resultMsg = "OTHER TOKEN ERROR";
+            newResponse = CommResponse.createError(e.getMessage());
         }
-        HashMap<String, Object> jsonMap = new HashMap<>();
-        jsonMap.put("status", 401);
-        jsonMap.put("code", "9999");
-        jsonMap.put("message", resultMsg);
-        jsonMap.put("reason", e.getMessage());
-        JSONObject jsonObject = new JSONObject(jsonMap);
-        logger.error(resultMsg, e);
-        return jsonObject;
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonResponse = mapper.writeValueAsString(newResponse);
+
+        log.error(jsonResponse);
+        return jsonResponse;
     }
 }

@@ -51,7 +51,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             "/api-docs/**",
             "/api/v1/auth/sign-in",
             "/api/v1/auth/sign-up",
-            "/api/v1/auth/reissue-access-token",
+            "/api/v1/auth/reissue-access-token", // refresh token 재발급
             "/console/**", // H2
             "/favicon.ico" // icon 인데 추가 안하니까 jwt에서 계속 에러 발생
     );
@@ -145,7 +145,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     /**
      * Access Token 만료로 요청 시 Access Token 재발급
-     *
+     * - 미사용
      * @param request
      * @param response
      * @param exception
@@ -180,32 +180,26 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         CommResponse<?> newResponse;
         // 토큰 정보가 누락된경우
         if (e instanceof NotFoundException) {
-//            resultMsg = "Not Found Token";
             newResponse = CommResponse.createError(ResultCode.JWT_NOT_FIND_TOKEN.getResultMessage());
         }
         // 일치하는 사용자 정보가 없는경우
         else if (e instanceof UsernameNotFoundException) {
-//            resultMsg = "Not Found User";
             newResponse = CommResponse.createError(ResultCode.NOT_FOUND_USER.getResultMessage());
         }
         // JWT 토큰 만료
         else if (e instanceof ExpiredJwtException) {
-//            resultMsg = "TOKEN Expired";
             newResponse = CommResponse.createError(ResultCode.JWT_ACCESS_TOKEN_EXPIRED.getResultMessage());
         }
         // JWT 토큰내에서 오류 발생 시
         else if (e instanceof JwtException) {
-//            resultMsg = "TOKEN Parsing JwtException";
             newResponse = CommResponse.createError(ResultCode.JWT_TOKEN_PARSING.getResultMessage());
         }
         // JWT 허용된 토큰이 아님
         else if (e != null) {
-//            resultMsg = "TOKEN SignatureException Login";
             newResponse = CommResponse.createError(ResultCode.UNAUTHORIZED.getResultMessage());
         }
         // 이외 JTW 토큰내에서 오류 발생
         else {
-//            resultMsg = "OTHER TOKEN ERROR";
             newResponse = CommResponse.createError(e.getMessage());
         }
         ObjectMapper mapper = new ObjectMapper();

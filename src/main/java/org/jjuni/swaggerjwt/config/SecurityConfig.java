@@ -12,7 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -28,12 +28,11 @@ public class SecurityConfig {
             "/",
             "/swagger-ui/**",
             "/swagger.html",
-//            "/v3/api-docs/**",
             "/api-docs/**",
             "/swagger-resource/**",
             "/api/v1/auth/sign-in",
             "/api/v1/auth/sign-up",
-            "/api/v1/auth/reissue-access-token",
+            "/api/v1/auth/reissue-access-token" // 재발급 요청 API
     };
 
     @Bean
@@ -45,8 +44,7 @@ public class SecurityConfig {
                 .httpBasic(http -> http.disable())
                 .formLogin(form -> form.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .addFilterBefore(jwtAuthorizationFilter, BasicAuthenticationFilter.class) // jwt 필터 추가
-                .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class) // jwt 필터 추가
+                .addFilterBefore(jwtAuthorizationFilter, BasicAuthenticationFilter.class) // jwt 필터 추가
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PathRequest.toH2Console()).permitAll()
                         .requestMatchers(excludePath).permitAll()

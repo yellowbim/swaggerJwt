@@ -40,7 +40,9 @@ public class GlobalControllerExceptionHandler extends Exception {
     public ResponseEntity<CommResponse<?>> handleExpiredJwtExceptions(ExpiredJwtException ex, WebRequest request) {
         log.error(ex.getMessage(), ex);
         CommResponse<?> response;
-        if (ex.getMessage().contains("Refresh Token")) {
+        // Access, Refresh 두 다 ExpiredJwtException 으로 던져서 Refresh Token 에러 발생하는 부분으로 잡아서 판단....
+        // 내키지 않지만 현재 뚜렷한 방법이 떠오르지 않음...
+        if (ex.getMessage().contains("Refresh Token Expired")) {
             response = CommResponse.createError(ResultCode.JWT_REFRESH_TOKEN_EXPIRED.getResultMessage());
         } else {
             response = CommResponse.createError(ResultCode.JWT_ACCESS_TOKEN_EXPIRED.getResultMessage());

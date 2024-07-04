@@ -170,10 +170,10 @@ public class JwtUtil {
             // Access Token 에서 userId 조회
             userId = getId(expiredAccessToken);
         } catch (ExpiredJwtException e) {
-            log.error("Refresh Token validation failed : {}", e.getMessage());
+            log.error("Refresh Token Expired : {}", e.getMessage());
             throw new ExpiredJwtException(null, null, "Refresh Token Expired");
         } catch (Exception e) {
-            log.error("validateRefreshToken Token Fail : {}", e.getMessage());
+            log.error("validate RefreshToken Token Fail : {}", e.getMessage());
             throw e;
         }
 

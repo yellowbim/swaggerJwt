@@ -26,6 +26,7 @@ public class CommResponse<T> {
         return new CommResponse<>(SUCCESS_STATUS, data, null);
     }
 
+    // data 없이 단순 성공 결과 응답
     public static CommResponse<?> createSuccessWithNoContent() {
         return new CommResponse<>(SUCCESS_STATUS, null, null);
     }
